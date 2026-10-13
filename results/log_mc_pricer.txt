@@ -1,0 +1,16 @@
+GBM S0=100 K=100 T=1 r=0.02 sigma=0.20 ; asiatique : 50 fixings ; 22 threads materiels
+20000000 couples antithetiques (europeen), 1000000 (asiatique)
+
+threads= 1  europeen 0.776 s (x1.00)   asiatique 1.914 s (x1.00)
+threads= 2  europeen 0.400 s (x1.94)   asiatique 0.990 s (x1.93)
+threads= 4  europeen 0.230 s (x3.37)   asiatique 0.508 s (x3.77)
+threads= 8  europeen 0.212 s (x3.67)   asiatique 0.292 s (x6.56)
+threads=16  europeen 0.159 s (x4.89)   asiatique 0.306 s (x6.25)
+
+Call europeen   : 8.91612  erreur-type 0.00166  IC95 [8.91285 ; 8.91938]
+Black-Scholes   : 8.91604  ecart +0.00008 = +0.05 erreurs-types  -> OK (< 3 ET)
+Call asiatique  : 5.12250  erreur-type 0.00407  IC95 [5.11452 ; 5.13047]
+  geometrique   : MC 4.93494 (ET 0.00395)  forme fermee 4.94185  ecart -1.75 ET -> OK
+  coherence     : geometrique <= arithmetique <= europeen : OK
+
+-> results/mc_pricer.json

@@ -1,0 +1,9 @@
+build/
+__pycache__/
+*.o
+*.exe
+
+# Git ne sait pas filtrer par taille : tout CSV de plus de 5 Mo doit être écrit dans results/gros/
+# (ou nommé *.gros.csv) pour être ignoré. Vérification : find results -name '*.csv' -size +5M
+results/gros/
+*.gros.csv

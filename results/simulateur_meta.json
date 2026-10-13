@@ -1,0 +1,9 @@
+{
+  "sessions_par_config": 500, "graine": 20260101, "duree_session_s": 2.0,
+  "mm": {"taille": 2, "q_max": 10, "L_us": [10, 100, 1000, 10000], "gammas": [0.001, 0.005, 0.02], "demi_spreads_naif": [1, 2, 3]},
+  "regimes": [
+    {"persistance": 0.50, "sigma2_ticks2_par_s": 152.06, "sigma2_100ms_ticks2_par_s": 404.29, "horizon_calibrage_sigma2_s": 1.0, "k_par_tick": 0.5029, "spread_zi_moyen_ticks": 4.08, "ordres_marche_par_s": 1505},
+    {"persistance": 0.75, "sigma2_ticks2_par_s": 210.82, "sigma2_100ms_ticks2_par_s": 473.24, "horizon_calibrage_sigma2_s": 1.0, "k_par_tick": 0.5563, "spread_zi_moyen_ticks": 3.78, "ordres_marche_par_s": 1505}
+  ],
+  "temps_calcul_s": 11.8, "threads": 22, "violations_passivite": 0
+}

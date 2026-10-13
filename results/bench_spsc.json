@@ -1,0 +1,30 @@
+{
+  "config": {"n_debit_file_seule": 20000000, "n_pipeline_debit": 4000000, "n_latence": 1000000, "cadence_msg_s": 300000,
+    "capacite_files": 1024, "repetitions": 5, "ticks_par_ns": 2.9952, "threads_materiels": 22,
+    "coeurs_epingles": [4, 6, 8], "priorite_processus": "haute (Windows)", "graine": 20261013,
+    "pipelines_conformes_a_la_reference_mono_thread": true, "flags": "-O3 -march=native -std=c++20"},
+  "debit": {
+    "spsc_lockfree": {
+      "file_seule": {"median_msg_s": 99738287, "par_repetition": [133473659, 99738287, 79376671, 92043019, 112580411]},
+      "pipeline_3_threads": {"median_msg_s": 6868776, "par_repetition": [8118567, 5948554, 6613436, 6868776, 8126561]}
+    },
+    "mutex_queue": {
+      "file_seule": {"median_msg_s": 6083471, "par_repetition": [6083471, 6550839, 4839393, 5356837, 6468485]},
+      "pipeline_3_threads": {"median_msg_s": 756107, "par_repetition": [825578, 756107, 625774, 625424, 850038]}
+    }
+  },
+  "latence": {
+    "spsc_lockfree": {
+      "un_saut_file_seule": {"p50_ns": 250.7, "p99_ns": 7435.6, "p999_ns": 1788583.4, "max_ns": 3767714, "moy_ns": 5515.5,
+        "p50_par_repetition": [235.7, 256.1, 255.1, 250.7, 235.0], "p99_par_repetition": [253237.5, 7435.6, 3758.0, 946.8, 34264.8]},
+      "pipeline_bout_en_bout": {"p50_ns": 406.0, "p99_ns": 64825.4, "p999_ns": 923325.7, "max_ns": 1661760, "moy_ns": 5191.2,
+        "p50_par_repetition": [366.9, 369.6, 472.4, 437.7, 406.0], "p99_par_repetition": [108928.6, 64825.4, 2829.2, 2796.1, 293964.7]}
+    },
+    "mutex_queue": {
+      "un_saut_file_seule": {"p50_ns": 888.8, "p99_ns": 26558.5, "p999_ns": 1126323.8, "max_ns": 3064489, "moy_ns": 5911.9,
+        "p50_par_repetition": [764.2, 1098.4, 888.8, 933.8, 742.5], "p99_par_repetition": [76182.6, 26558.5, 11606.9, 19000.1, 235975.6]},
+      "pipeline_bout_en_bout": {"p50_ns": 1844.0, "p99_ns": 233030.5, "p999_ns": 1311819.6, "max_ns": 2429264, "moy_ns": 10542.5,
+        "p50_par_repetition": [1654.0, 1924.4, 1900.4, 1621.9, 1844.0], "p99_par_repetition": [292075.3, 233030.5, 25389.3, 22586.8, 360191.6]}
+    }
+  }
+}

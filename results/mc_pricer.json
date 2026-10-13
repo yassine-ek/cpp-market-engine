@@ -1,0 +1,14 @@
+{
+  "parametres": {"S0": 100, "K": 100, "T": 1, "r": 0.02, "sigma": 0.20, "fixings_asiatique": 50,
+    "couples_antithetiques_europeen": 20000000, "couples_antithetiques_asiatique": 1000000, "graine": 20260101, "threads_materiels": 22},
+  "europeen": {"prix": 8.916116, "erreur_type": 0.001665, "ic95": [8.912853, 8.919380], "black_scholes": 8.916037, "ecart": 0.000079, "ecart_en_erreurs_types": 0.048},
+  "asiatique_arithmetique": {"prix": 5.122497, "erreur_type": 0.004068, "ic95": [5.114523, 5.130470]},
+  "asiatique_geometrique_validation": {"prix_mc": 4.934942, "erreur_type": 0.003950, "forme_fermee": 4.941848, "ecart_en_erreurs_types": -1.748},
+  "speedup": [
+    {"threads": 1, "temps_europeen_s": 0.7759, "speedup_europeen": 1.00, "temps_asiatique_s": 1.9139, "speedup_asiatique": 1.00, "efficacite_asiatique": 1.00},
+    {"threads": 2, "temps_europeen_s": 0.3997, "speedup_europeen": 1.94, "temps_asiatique_s": 0.9902, "speedup_asiatique": 1.93, "efficacite_asiatique": 0.97},
+    {"threads": 4, "temps_europeen_s": 0.2300, "speedup_europeen": 3.37, "temps_asiatique_s": 0.5081, "speedup_asiatique": 3.77, "efficacite_asiatique": 0.94},
+    {"threads": 8, "temps_europeen_s": 0.2115, "speedup_europeen": 3.67, "temps_asiatique_s": 0.2917, "speedup_asiatique": 6.56, "efficacite_asiatique": 0.82},
+    {"threads": 16, "temps_europeen_s": 0.1588, "speedup_europeen": 4.89, "temps_asiatique_s": 0.3064, "speedup_asiatique": 6.25, "efficacite_asiatique": 0.39}
+  ]
+}

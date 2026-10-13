@@ -1,0 +1,23 @@
+# Sortie des tests, 2026-10-13 ; g++ 16.2.0 (MinGW-w64), -O3 -march=native -std=c++20 ; build.sh puis les deux exécutables
+## build/test_carnet
+[CarnetMap (a)]
+[CarnetPlat (b)]
+[flux aleatoire]
+  differentiel : 1000000 ops, 500965 trades, ordres au repos a la fin=87447, desaccords=0, incoherences=0
+  differentiel : 200000 ops, 99535 trades, ordres au repos a la fin=18438, desaccords=0, incoherences=0
+
+134 verifications, 0 echec(s)
+
+## build/test_spsc
+[file SPSC, mono-thread]
+[file SPSC, 2 threads]
+  SPSC capacite 1024  : 20000000 elements, pertes=0, doublons=0, hors ordre=0
+  SPSC capacite 2     : 3000000 elements, pertes=0, doublons=0, hors ordre=0
+  Mutex capacite 1024 : 2000000 elements, pertes=0, doublons=0, hors ordre=0
+[pipeline 3 threads]
+  reference mono-thread : 2000000 msgs, 1404304 trades, 14321 ordres au repos, 83256 hausses, 83411 baisses, 733209 spreads serres
+  pipeline SPSC  (cap 1024) : 2000000 msgs vus, trades=1404304 (ref 1404304), carnet identique=1, empreinte identique=1
+  pipeline SPSC  (cap 4) : 2000000 msgs vus, trades=1404304 (ref 1404304), carnet identique=1, empreinte identique=1
+  pipeline Mutex (cap 1024) : 2000000 msgs vus, trades=1404304 (ref 1404304), carnet identique=1, empreinte identique=1
+
+162 verifications, 0 echec(s)

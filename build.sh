@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compile tout dans build/. Usage : bash build.sh
+# Compile tout dans build/. Usage : bash build.sh   (CMakeLists.txt : même chose avec CMake et ctest)
 #
 # Variables d'environnement (toutes facultatives) :
 #   CXX     compilateur C++20 (défaut : g++ du PATH, g++ >= 13 requis). Sous Windows/MinGW :

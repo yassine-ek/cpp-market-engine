@@ -6,7 +6,7 @@ Produit :
   figures/fig8_spsc_vs_mutex.png   détail SPSC / mutex : débit, p50, dispersion du p99 par répétition
   figures/toutes_variantes_mm.png  les 25 configurations du simulateur x 2 régimes de flux (carte de chaleur)
 Remplace dans README.md les blocs  <!-- BEGIN:nom --> ... <!-- END:nom -->  (badges, hypotheses, metriques,
-lecture30, variantes) par des tableaux calculés à partir de results/*.json|csv|txt.
+cles, lecture30, variantes) par des tableaux calculés à partir de results/*.json|csv|txt.
 """
 import json
 import re
@@ -95,60 +95,46 @@ def pnl(reg, strat, L, gamma=None, h=None):
 
 # ------------------------------------------------------------------ figures
 def fig_hero():
-    fig, ax = plt.subplots(1, 3, figsize=(17, 4.9), gridspec_kw={"width_ratios": [1.25, 1, 1.05]})
-    # A) histogrammes de latence des deux carnets
-    for d, nom, c in ((a, "(a) std::map + list", C_MAP), (b, "(b) tableau plat", C_PLAT)):
-        h = d["histogramme"]
-        bornes = np.array(h["bornes_basses_ns"])
-        comptes = np.array(h["comptes"], dtype=float)
-        larg = np.append(bornes[1:], bornes[-1] * 10 ** 0.1) - bornes
-        g = d["global"]
-        ax[0].bar(bornes, comptes, width=larg, align="edge", alpha=0.55, color=c, edgecolor="none",
-                  label=f"{nom} : p50 {duree(g['p50_ns'])}, p99 {duree(g['p99_ns'])}, p99,9 {duree(g['p999_ns'])}")
-        ax[0].axvline(g["p50_ns"], color=c, ls="--", lw=1.2)
-        ax[0].axvline(g["p99_ns"], color=c, ls=":", lw=1.2)
-    ax[0].set_xscale("log"), ax[0].set_yscale("log"), ax[0].set_xlim(10, 1e6)
-    ax[0].set_xlabel("latence par opération (ns, échelle log)")
-    ax[0].set_ylabel("nombre d'opérations (log)")
-    ax[0].set_title(f"A. Carnet d'ordres : latence sur {cfg['ops_mesurees'] / 1e6:.0f} M d'opérations\n(traits : p50 -- et p99 ···)", fontsize=10)
-    ax[0].legend(fontsize=7.5, loc="upper right")
-    # B) débit SPSC vs mutex
-    deb = bs["debit"]
-    etiq = [("file seule", "file_seule"), ("pipeline\n3 threads", "pipeline_3_threads")]
-    x = np.arange(2)
-    for k, (cle, c, nom) in enumerate((("spsc_lockfree", C_SPSC, "SPSC lock-free"), ("mutex_queue", C_MUTEX, "mutex + queue"))):
-        med = [deb[cle][e]["median_msg_s"] / 1e6 for _, e in etiq]
-        ax[1].bar(x + (k - 0.5) * 0.38, med, 0.36, color=c, label=nom)
-        for xi, e in zip(x, etiq):
-            pts = np.array(deb[cle][e[1]]["par_repetition"]) / 1e6
-            ax[1].scatter(np.full(len(pts), xi + (k - 0.5) * 0.38), pts, s=9, color="k", zorder=3, alpha=0.6)
-        for xi, (_, e) in zip(x, etiq):
-            haut = max(deb[cle][e]["par_repetition"]) / 1e6
-            m = deb[cle][e]["median_msg_s"] / 1e6
-            ax[1].text(xi + (k - 0.5) * 0.38, haut * 1.25, nombre(m, 1 if m >= 1 else 2), ha="center", fontsize=8.5)
-    for xi, (_, e) in zip(x, etiq):
-        r = deb["spsc_lockfree"][e]["median_msg_s"] / deb["mutex_queue"][e]["median_msg_s"]
-        ax[1].text(xi, 0.35, f"{nombre(r, 0)}×", ha="center", fontsize=11, fontweight="bold")
-    ax[1].set_yscale("log"), ax[1].set_ylim(0.3, 400)
-    ax[1].set_xticks(x, [e[0] for e in etiq]), ax[1].set_ylabel("Mmsg/s (log) ; points = répétitions")
-    ax[1].set_title("B. File SPSC lock-free vs std::mutex : débit\n(médiane de 5 répétitions)", fontsize=10)
-    ax[1].legend(fontsize=8, loc="upper right")
-    # C) PnL du market maker vs période de recotation (régime pur)
-    xs = np.arange(len(Ls))
-    for (strat, kw, c, nom, ls) in (("AS", {"gamma": 0.005}, C_AS, "Avellaneda-Stoikov γ = 0,005", "-"),
-                                    ("AS", {"gamma": 0.02}, C_AS, "Avellaneda-Stoikov γ = 0,02", ":"),
-                                    ("naif", {"h": 2.0}, C_NAIF, "naïf, demi-spread 2 ticks", "-")):
-        ligs = [pnl(REG_PUR, strat, L, **kw) for L in Ls]
-        ax[2].errorbar(xs, [l.pnl_moy for l in ligs], yerr=[2 * l.pnl_se for l in ligs], marker="o", ls=ls, color=c,
-                       capsize=3, label=nom)
-    ax[2].set_xticks(xs, NOM_L), ax[2].set_xlabel("période de recotation L (temps simulé)")
-    ax[2].set_ylabel("PnL moyen par session (ticks × lots)")
-    ax[2].set_ylim(bottom=0)
-    ax[2].set_title(f"C. Market maker : PnL vs latence de recotation\n({meta['sessions_par_config']} sessions par point, barres = ±2 erreurs-types)", fontsize=10)
-    ax[2].legend(fontsize=8, loc="upper right")
-    fig.suptitle(f"Moteur de marché C++20, résultats clés. Core Ultra 7 155H, Windows 11 partagé, rdtsc (overhead {nombre(cfg['overhead_horloge_ns'], 1)} ns "
-                 f"non soustrait), flux synthétique : valeurs absolues indicatives, rapports plus stables", fontsize=10.5, y=1.03)
-    sauver(fig, "hero_latences.png")
+    """Figure héro : 2 panneaux, 10 x 4,6 pouces, textes >= 11 pt (lisible une fois réduite à la largeur du README)."""
+    with plt.rc_context({"font.size": 11, "axes.titlesize": 12, "axes.labelsize": 11, "legend.fontsize": 11,
+                         "xtick.labelsize": 11, "ytick.labelsize": 11}):
+        fig, ax = plt.subplots(1, 2, figsize=(10, 4.6), gridspec_kw={"width_ratios": [1.2, 1]})
+        # A) histogrammes de latence des deux carnets
+        for d, nom, c in ((a, "std::map", C_MAP), (b, "tableau plat", C_PLAT)):
+            h = d["histogramme"]
+            bornes = np.array(h["bornes_basses_ns"])
+            comptes = np.array(h["comptes"], dtype=float)
+            larg = np.append(bornes[1:], bornes[-1] * 10 ** 0.1) - bornes
+            g = d["global"]
+            ax[0].bar(bornes, comptes, width=larg, align="edge", alpha=0.55, color=c, edgecolor="none",
+                      label=f"{nom}\np50 {duree(g['p50_ns'])} · p99 {duree(g['p99_ns'])}")
+            ax[0].axvline(g["p50_ns"], color=c, ls="--", lw=1.4)
+        ax[0].set_xscale("log"), ax[0].set_yscale("log"), ax[0].set_xlim(10, 1e6), ax[0].set_ylim(0.5, 3e7)
+        ax[0].set_xlabel("latence par opération (ns, log)")
+        ax[0].set_ylabel("opérations (log)")
+        ax[0].set_title(f"Carnet : latence sur {cfg['ops_mesurees'] / 1e6:.0f} M d'opérations")
+        ax[0].legend(loc="upper right", frameon=False)
+        # B) débit SPSC vs mutex
+        deb = bs["debit"]
+        etiq = [("file seule", "file_seule"), ("pipeline\n3 threads", "pipeline_3_threads")]
+        x = np.arange(2)
+        for k, (cle, c, nom) in enumerate((("spsc_lockfree", C_SPSC, "SPSC lock-free"), ("mutex_queue", C_MUTEX, "mutex + queue"))):
+            med = [deb[cle][e]["median_msg_s"] / 1e6 for _, e in etiq]
+            ax[1].bar(x + (k - 0.5) * 0.38, med, 0.36, color=c, label=nom)
+            for xi, (_, e) in zip(x, etiq):
+                pts = np.array(deb[cle][e]["par_repetition"]) / 1e6
+                ax[1].scatter(np.full(len(pts), xi + (k - 0.5) * 0.38), pts, s=9, color="k", zorder=3, alpha=0.6)
+                m = deb[cle][e]["median_msg_s"] / 1e6
+                ax[1].text(xi + (k - 0.5) * 0.38, max(pts) * 1.25, nombre(m, 1 if m >= 1 else 2), ha="center", fontsize=11)
+        rapports = [deb["spsc_lockfree"][e]["median_msg_s"] / deb["mutex_queue"][e]["median_msg_s"] for _, e in etiq]
+        ax[1].set_yscale("log"), ax[1].set_ylim(0.3, 600)
+        ax[1].set_xticks(x, [f"{lib}\n(SPSC = {nombre(r, 0)}× mutex)" for (lib, _), r in zip(etiq, rapports)])
+        ax[1].set_ylabel("Mmsg/s (log)")
+        ax[1].set_title("Débit : SPSC lock-free vs mutex")
+        ax[1].legend(loc="upper right", frameon=False)
+        fig.suptitle("Carnet d'ordres et file SPSC, mesures brutes (PC partagé)", fontsize=12.5, y=1.0)
+        fig.tight_layout()
+        sauver(fig, "hero_latences.png")
 
 
 def fig_spsc():
@@ -212,34 +198,52 @@ def fig_variantes_mm():
 
 # ------------------------------------------------------------------ blocs de README
 def bloc_badges():
-    n1, n2 = verifs[0][0], verifs[1][0]
     return "\n".join([
+        "[![tests](https://github.com/yassine-ek/cpp-market-engine/actions/workflows/tests.yml/badge.svg)]"
+        "(https://github.com/yassine-ek/cpp-market-engine/actions/workflows/tests.yml)",
         "![C++20](https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus&logoColor=white)",
-        f"![tests](https://img.shields.io/badge/tests-{n1}%20%2B%20{n2}%20v%C3%A9rifications-brightgreen)",
         "![licence MIT](https://img.shields.io/badge/licence-MIT-blue)",
         "![sans dépendance](https://img.shields.io/badge/d%C3%A9pendances-aucune-lightgrey)",
+    ])
+
+
+def bloc_cles():
+    """Trois puces « Résultats clés » : chaque chiffre est lu dans results/, chacun avec sa réserve."""
+    g1, g2 = a["global"], b["global"]
+    deb, la = bs["debit"], bs["latence"]
+    S, M = "spsc_lockfree", "mutex_queue"
+    n_diff = sum(int(d[0]) for d in diff)
+    des = sum(int(d[2]) for d in diff)
+    return "\n".join([
+        f"- **Carnet d'ordres : le tableau plat est {rapport(g1['p50_ns'], g2['p50_ns'], 0)} plus rapide que `std::map` au p50** "
+        f"({duree(g2['p50_ns'])} contre {duree(g1['p50_ns'])} ; p99 {duree(g2['p99_ns'])} contre {duree(g1['p99_ns'])} ; "
+        f"{mops(b['debit_ops_s'])} contre {mops(a['debit_ops_s'], 2)} Mops/s), sur {nombre(cfg['ops_mesurees'] / 1e6)} M d'opérations synthétiques. "
+        f"*Réserve : latences brutes (overhead de `rdtsc` de {nombre(cfg['overhead_horloge_ns'], 1)} ns non soustrait), mesurées sur le cœur logique "
+        f"{cfg['coeur_epingle']} d'un PC Windows partagé, choisi après essais ; les valeurs absolues varient d'un facteur 1,6, le rapport p50 reste dans 4,7-5,1×.*",
+        f"- **Correction vérifiée** : les deux carnets rendent exactement les mêmes trades dans le même ordre sur {nombre(n_diff / 1e6, 1)} M d'opérations aléatoires "
+        f"({des} désaccord) ; {verifs[0][0]} + {verifs[1][0]} vérifications, {verifs[0][1] + verifs[1][1]} échec ; la CI Linux rejoue les tests sous ASan, UBSan et ThreadSanitizer (badge ci-dessus). "
+        "*Réserve : cela prouve l'équivalence sur les flux testés, pas la correction sur tous les flux ; les sanitizers ne tournent pas sous le MinGW local.*",
+        f"- **File SPSC lock-free : {rapport(deb[S]['pipeline_3_threads']['median_msg_s'], deb[M]['pipeline_3_threads']['median_msg_s'], 0)} le débit d'une file `std::mutex` dans le pipeline à 3 threads** "
+        f"({mops(deb[S]['pipeline_3_threads']['median_msg_s'])} contre {mops(deb[M]['pipeline_3_threads']['median_msg_s'], 2)} Mmsg/s ; "
+        f"p50 de bout en bout {duree(la[S]['pipeline_bout_en_bout']['p50_ns'])} contre {duree(la[M]['pipeline_bout_en_bout']['p50_ns'])}). "
+        "*Réserve : seuls le p50 et le débit départagent les deux files, les queues p99 / p99,9 sont du bruit d'ordonnanceur ; mesuré sur x86-64 (modèle mémoire TSO).*",
     ])
 
 
 def bloc_hypotheses():
     mix = cfg["mix"]
     lignes = [
-        ("Machine", f"Intel Core Ultra 7 155H (16 cœurs, {bs['config']['threads_materiels']} threads logiques, hybride P/E), Windows 11. "
-                    "**Machine de travail partagée**, pas un serveur isolé : d'autres processus tournent pendant les mesures."),
-        ("Compilateur", f"g++ {cfg['compilateur']} (MinGW-w64), `{cfg['flags']}`. La CI Linux (g++ ≥ 13) compile et exécute les tests, pas les benchmarks."),
-        ("Horloge", f"`rdtsc` encadré de `lfence`, TSC calibré à {nombre(cfg['ticks_par_ns'], 3)} GHz sur `steady_clock` "
-                    f"(granularité {cfg['granularite_steady_clock_ns']} ns, plus grosse que l'opération mesurée)."),
-        ("Overhead de mesure", f"{nombre(cfg['overhead_horloge_ns'], 1)} ns par mesure, mesuré et **non soustrait** : toutes les latences sont brutes."),
-        ("Épinglage", f"Carnet : thread sur le cœur logique {cfg['coeur_epingle']}, priorité du processus relevée. "
-                      f"SPSC / pipeline : cœurs {', '.join(map(str, bs['config']['coeurs_epingles']))}. Hors Windows : pas d'épinglage."),
-        ("Flux du benchmark", f"{nombre(cfg['ops_mesurees'])} opérations mesurées après {nombre(cfg['ops_warmup'])} de chauffe "
-                              f"({round(mix['ajout'] * 100)} % ajouts, {round(mix['annulation'] * 100)} % annulations, {round(mix['marche'] * 100)} % ordres au marché), "
-                              f"≈ {nombre(flux['ordres_vivants_moyen'])} ordres vivants, graine {cfg['graine']}. Le même flux est rejoué sur les deux carnets."),
-        ("Répétitions", f"Carnet : 3, alternées (a, b, a, b…) ; on publie la répétition de p50 médian. "
-                        f"SPSC : {bs['config']['repetitions']}, médiane ; latences à cadence fixe de {nombre(bs['config']['cadence_msg_s'])} msg/s."),
-        ("Variabilité connue", "Valeurs absolues : facteur 1,6 d'une exécution à l'autre sur cette machine ; rapport p50 map / plat : 4,7 à 5,1× sur "
-                               "toutes les exécutions faites. Les `max` et les queues p99/p99,9 du SPSC et du mutex sont du bruit d'ordonnanceur."),
-        ("Pas mesuré", "Compteurs matériels (défauts de cache), ThreadSanitizer (absent de ce MinGW), réseau (aucun), données de marché réelles (flux synthétique)."),
+        ("Machine", f"Intel Core Ultra 7 155H ({bs['config']['threads_materiels']} threads logiques, hybride P/E), Windows 11, **PC de travail partagé** (d'autres processus tournent). "
+                    f"g++ {cfg['compilateur']} (MinGW-w64), `{cfg['flags']}`. La CI Linux compile et teste, elle ne mesure pas."),
+        ("Horloge", f"`rdtsc` encadré de `lfence`, calibré à {nombre(cfg['ticks_par_ns'], 3)} GHz sur `steady_clock` (granularité {cfg['granularite_steady_clock_ns']} ns, plus grosse que l'opération). "
+                    f"Overhead de {nombre(cfg['overhead_horloge_ns'], 1)} ns par mesure, mesuré et **non soustrait** : toutes les latences sont brutes."),
+        ("Épinglage", f"Carnet : cœur logique {cfg['coeur_epingle']}, **choisi après essais** (les cœurs 2, 4 et 6 étaient plus lents ou plus chargés). "
+                      f"SPSC / pipeline : cœurs {', '.join(map(str, bs['config']['coeurs_epingles']))}. Topologie P/E non vérifiée."),
+        ("Flux et répétitions", f"{nombre(cfg['ops_mesurees'])} opérations après {nombre(cfg['ops_warmup'])} de chauffe ({round(mix['ajout'] * 100)} % ajouts, "
+                                f"{round(mix['annulation'] * 100)} % annulations, {round(mix['marche'] * 100)} % marché), ≈ {nombre(flux['ordres_vivants_moyen'])} ordres vivants, graine {cfg['graine']}, "
+                                f"même flux sur les deux carnets. Carnet : 3 répétitions alternées (médiane de p50) ; SPSC : {bs['config']['repetitions']} répétitions, cadence {nombre(bs['config']['cadence_msg_s'])} msg/s."),
+        ("Variabilité, non mesuré", "Valeurs absolues : facteur 1,6 d'une exécution à l'autre, rapport p50 map / plat 4,7 à 5,1×. Queues p99 / p99,9 des files : bruit d'ordonnanceur. "
+                                    "Non mesuré : compteurs matériels, réseau, données de marché réelles."),
     ]
     return tableau(["Hypothèse de mesure", "Valeur"], lignes)
 
@@ -300,7 +304,8 @@ def bloc_lecture30():
         f"Pour le SPSC, seuls le p50 et le débit départagent : le p99 bout en bout va de {duree(min(p99_s))} à {duree(max(p99_s))} d'une répétition à l'autre.",
         f"- **Utile ?** Dans le simulateur, passer d'une recotation toutes les 10 µs à toutes les 10 ms fait perdre "
         f"{nombre(-(pnl(REG_PUR, 'AS', Ls[-1], gamma=0.005).pnl_moy / pnl(REG_PUR, 'AS', Ls[0], gamma=0.005).pnl_moy - 1) * 100, 0)} % de PnL à l'Avellaneda-Stoikov (γ = 0,005). "
-        "Le marché est synthétique et non calibré : c'est un mécanisme illustré, pas une rentabilité.",
+        "Mais cette « latence » est une période de recotation en temps simulé, **sans lien avec la latence mesurée du carnet** (les ns du benchmark ne sont pas injectés dans le simulateur) ; "
+        "le marché est synthétique et non calibré : c'est un mécanisme illustré, pas une rentabilité.",
     ])
 
 
@@ -350,7 +355,7 @@ def bloc_variantes():
     return "\n\n".join(out)
 
 
-BLOCS = {"badges": bloc_badges, "hypotheses": bloc_hypotheses, "metriques": bloc_metriques, "lecture30": bloc_lecture30, "variantes": bloc_variantes}
+BLOCS = {"badges": bloc_badges, "cles": bloc_cles, "hypotheses": bloc_hypotheses, "metriques": bloc_metriques, "lecture30": bloc_lecture30, "variantes": bloc_variantes}
 
 
 def injecter():

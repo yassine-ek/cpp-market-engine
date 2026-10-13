@@ -1,6 +1,6 @@
 # bench/ : benchmarks de latence et de débit
 
-Les benchmarks écrivent leurs résultats dans `results/`. Ils exigent un x86-64 (`rdtsc`) ; l'épinglage de cœur et la priorité élevée ne sont appliqués que sous Windows. **Ne pas les lancer en CI** : une machine virtuelle partagée ne donne pas de latences exploitables.
+Les benchmarks écrivent leurs résultats dans `results/`. Ils n'ont de sens que sur x86-64 (`rdtsc`, via `include/cpu.hpp` ; ailleurs, repli sur `steady_clock`) ; l'épinglage de cœur et la priorité élevée ne sont appliqués que sous Windows. **Ne pas les lancer en CI** : une machine virtuelle partagée ne donne pas de latences exploitables.
 
 | Fichier | Mesure | Produit |
 |---|---|---|

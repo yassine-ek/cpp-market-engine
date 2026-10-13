@@ -12,8 +12,6 @@
 //                calcule une empreinte de toute la séquence reçue.
 // Le pipeline est un template sur le type de file (FileSpsc ou FileMutex) : même code, même charge.
 #pragma once
-#include <x86intrin.h>
-
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -31,6 +29,7 @@
 #endif
 
 #include "carnet.hpp"
+#include "cpu.hpp"
 #include "file_mutex.hpp"
 #include "spsc.hpp"
 
@@ -168,7 +167,7 @@ inline void epingler(int coeur) {
 #ifdef ATTENTE_COOPERATIVE
 inline void attendre() { std::this_thread::yield(); }
 #else
-inline void attendre() { _mm_pause(); }
+inline void attendre() { cpu_pause(); }
 #endif
 
 template <template <class> class File>
@@ -186,12 +185,12 @@ ResultatPipeline executer_pipeline(const std::vector<MsgOrdre>& ops, const Confi
   std::thread feed([&] {
     epingler(opt.coeurs[0]);
     while (!go.load(std::memory_order_acquire)) attendre();
-    const uint64_t t0 = __rdtsc();
+    const uint64_t t0 = tsc();
     for (size_t i = 0; i < ops.size(); ++i) {
       MsgOrdre m = ops[i];
       if (pas > 0) {
         const uint64_t cible = t0 + static_cast<uint64_t>(static_cast<double>(i) * pas);
-        while (__rdtsc() < cible) attendre();
+        while (tsc() < cible) attendre();
         m.t_emis = cible;
       }
       while (!f1.try_push(m)) attendre();
@@ -226,7 +225,7 @@ ResultatPipeline executer_pipeline(const std::vector<MsgOrdre>& ops, const Confi
     for (;;) {
       while (!f2.try_pop(t)) attendre();
       if (t.fin) break;
-      if (opt.latences) r.lat_ticks.push_back(__rdtsc() - t.t_emis);
+      if (opt.latences) r.lat_ticks.push_back(tsc() - t.t_emis);
       r.strat.voir(t);
     }
     t_fin = Horloge::now();

@@ -7,8 +7,6 @@
 //  - Latence par opération : compteur TSC (rdtsc) calibré sur steady_clock. steady_clock seul a ici une
 //    granularité de 100 ns (QueryPerformanceCounter sous Windows), plus grosse que l'opération mesurée.
 //  - Débit : passe séparée, sans chronométrage par opération, mesurée sur steady_clock.
-#include <x86intrin.h>
-
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -28,6 +26,7 @@
 #endif
 
 #include "carnet.hpp"
+#include "cpu.hpp"
 
 using namespace marche;
 using Horloge = std::chrono::steady_clock;
@@ -43,8 +42,7 @@ static constexpr uint64_t GRAINE = 20260101;
 static constexpr double MOY_QTE_MARCHE = 320, CIBLE_VIVANTS = 50000;
 
 // ------------------------------------------------------------------ horloge TSC
-static inline uint64_t tsc_debut() { _mm_lfence(); const uint64_t t = __rdtsc(); _mm_lfence(); return t; }
-static inline uint64_t tsc_fin() { unsigned aux; const uint64_t t = __rdtscp(&aux); _mm_lfence(); return t; }
+// tsc_debut() / tsc_fin() : voir include/cpu.hpp (rdtsc encadré de lfence sur x86, repli steady_clock ailleurs)
 
 static double calibrer_ticks_par_ns() {
   const auto t0 = Horloge::now();

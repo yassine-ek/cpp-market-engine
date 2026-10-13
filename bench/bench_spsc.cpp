@@ -10,8 +10,6 @@
 // calibré sur steady_clock. Estampille = heure PRÉVUE d'émission, donc si le producteur est bloqué par
 // une file pleine, l'attente est comptée (pas d'« omission coordonnée »).
 // Résultat : results/bench_spsc.json. Chiffres indicatifs : machine Windows non isolée.
-#include <x86intrin.h>
-
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
@@ -21,6 +19,7 @@
 #include <vector>
 
 #include "carnet.hpp"
+#include "cpu.hpp"
 #include "pipeline.hpp"
 
 using namespace marche;
@@ -38,9 +37,9 @@ static constexpr uint64_t GRAINE = 20261013;
 
 static double calibrer_ticks_par_s() {
   const auto t0 = Horloge::now();
-  const uint64_t c0 = __rdtsc();
+  const uint64_t c0 = tsc();
   while (Horloge::now() - t0 < std::chrono::milliseconds(300)) {}
-  const uint64_t c1 = __rdtsc();
+  const uint64_t c1 = tsc();
   const auto t1 = Horloge::now();
   return static_cast<double>(c1 - c0) / std::chrono::duration<double>(t1 - t0).count();
 }
@@ -102,10 +101,10 @@ static Perc latence_saut(const int* coeurs, double tps, double tpns) {
   std::thread prod([&] {
     epingler(coeurs[0]);
     while (!go.load(std::memory_order_acquire)) attendre();
-    const uint64_t t0 = __rdtsc();
+    const uint64_t t0 = tsc();
     for (uint64_t i = 0; i < N_LAT; ++i) {
       const uint64_t cible = t0 + static_cast<uint64_t>(static_cast<double>(i) * pas);
-      while (__rdtsc() < cible) attendre();
+      while (tsc() < cible) attendre();
       while (!q.try_push(cible)) attendre();
     }
   });
@@ -114,7 +113,7 @@ static Perc latence_saut(const int* coeurs, double tps, double tpns) {
     uint64_t t;
     for (uint64_t i = 0; i < N_LAT; ++i) {
       while (!q.try_pop(t)) attendre();
-      lat.push_back(__rdtsc() - t);
+      lat.push_back(tsc() - t);
     }
   });
   go.store(true, std::memory_order_release);

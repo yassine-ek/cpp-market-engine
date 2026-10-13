@@ -7,3 +7,8 @@ __pycache__/
 # (ou nommé *.gros.csv) pour être ignoré. Vérification : find results -name '*.csv' -size +5M
 results/gros/
 *.gros.csv
+
+build-cmake/
+.venv/
+venv/
+.pytest_cache/

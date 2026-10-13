@@ -4,9 +4,13 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   build-et-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -32,3 +36,86 @@ jobs:
 
       - name: Tests de la file SPSC et du pipeline (162 vérifications)
         run: ./build/test_spsc
+
+  # Détecte les accès mémoire invalides (ASan) et les comportements indéfinis (UBSan) sur les deux suites.
+  # -fno-sanitize-recover : la première erreur d'UBSan fait échouer le job, elle ne se contente pas de s'afficher.
+  asan-ubsan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      NATIVE: "0"
+      CXXEXTRA: "-g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=undefined"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compilateur C++20 (g++ >= 13)
+        run: |
+          if [ "$(g++ -dumpversion | cut -d. -f1)" -lt 13 ]; then
+            sudo apt-get update
+            sudo apt-get install -y g++-13
+            echo "CXX=g++-13" >> "$GITHUB_ENV"
+          fi
+
+      - name: Compilation avec ASan + UBSan
+        run: bash build.sh
+
+      - name: Tests du carnet sous ASan + UBSan
+        run: ./build/test_carnet
+
+      - name: Tests de la file SPSC et du pipeline sous ASan + UBSan
+        run: ./build/test_spsc
+
+  # ThreadSanitizer sur la file SPSC lock-free et le pipeline à 3 threads : les tests passent aussi sans lui sur
+  # x86-64 (modèle mémoire TSO), TSan vérifie en plus que acquire/release suffit au sens du modèle C++.
+  # -DATTENTE_COOPERATIVE : les threads en attente cèdent le processeur (yield) au lieu de tourner à vide, car
+  # l'attente active est trop lente sous TSan. La synchronisation testée (compteurs, acquire/release) est la même.
+  threadsanitizer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NATIVE: "0"
+      CXXEXTRA: "-g -fsanitize=thread -DATTENTE_COOPERATIVE"
+      TSAN_OPTIONS: "halt_on_error=1 second_deadlock_stack=1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compilateur C++20 (g++ >= 13)
+        run: |
+          if [ "$(g++ -dumpversion | cut -d. -f1)" -lt 13 ]; then
+            sudo apt-get update
+            sudo apt-get install -y g++-13
+            echo "CXX=g++-13" >> "$GITHUB_ENV"
+          fi
+
+      # TSan refuse de démarrer quand l'entropie de l'ASLR est trop grande (noyaux récents des runners).
+      - name: Réduire l'entropie ASLR (prérequis de TSan)
+        run: sudo sysctl vm.mmap_rnd_bits=28
+
+      - name: Compilation avec ThreadSanitizer
+        run: bash build.sh
+
+      - name: Tests de la file SPSC et du pipeline sous ThreadSanitizer
+        run: ./build/test_spsc
+
+  # Même sources, autre système de construction : vérifie CMakeLists.txt et passe par ctest.
+  cmake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compilateur C++20 (g++ >= 13)
+        run: |
+          if [ "$(g++ -dumpversion | cut -d. -f1)" -lt 13 ]; then
+            sudo apt-get update
+            sudo apt-get install -y g++-13
+            echo "CXX=g++-13" >> "$GITHUB_ENV"
+          fi
+
+      - name: Configuration et compilation (CMake)
+        run: |
+          cmake -S . -B build-cmake -DCMAKE_BUILD_TYPE=Release -DNATIVE=OFF
+          cmake --build build-cmake -j 4
+
+      - name: Tests (ctest)
+        run: ctest --test-dir build-cmake --output-on-failure

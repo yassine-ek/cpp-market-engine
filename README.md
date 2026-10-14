@@ -200,10 +200,6 @@ Métiers visés : market making, exécution, plateformes de trading FX. Ce moteu
 - **Concurrence** : la file SPSC est vérifiée par le raisonnement acquire/release, les tests de séquence et ThreadSanitizer en CI Linux ; pas de job ARM, pas de model checking.
 - **Tests** : framework maison (compteur d'échecs). Le test différentiel prouve que les deux implémentations sont équivalentes sur les flux testés, pas qu'elles sont correctes sur tous les flux ; les scénarios unitaires et la comptabilité des quantités couvrent le reste.
 
-## Comment ce projet a été construit
-
-Projet réalisé en octobre 2026 avec un assistant de programmation IA (Claude, Anthropic) que j'ai dirigé : choix des sujets, protocole, vérification des résultats. Tous les chiffres sont régénérés par les scripts du dépôt et contrôlés par les tests et la CI.
-
 ## Reproduire
 
 Aucune donnée externe à télécharger : le flux d'ordres est synthétique et généré par les exécutables.
